@@ -154,10 +154,6 @@ func AppendObjectSample() {
 	if err != nil {
 		HandleError(err)
 	}
-	nextPos, err = bucket.AppendObject(archiveObjectAppendKey, strings.NewReader("却道海棠依旧。知否？知否？应是绿肥红瘦。"), nextPos)
-	if err != nil {
-		HandleError(err)
-	}
 
 	// Delete the object and bucket
 	err = DeleteTestBucketAndObject(bucketName)
