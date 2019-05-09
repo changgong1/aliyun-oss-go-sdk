@@ -126,13 +126,14 @@ func (s *OssBucketSuite) TearDownTest(c *C) {
 }
 
 // TestPutObject
-func (s *OssBucketSuite) TestPutObject(c *C) {
+func (s *OssBucketSuite) TestPutObjectOnly(c *C) {
 	objectName := objectNamePrefix + randStr(8)
 	objectValue := "大江东去，浪淘尽，千古风流人物。 故垒西边，人道是、三国周郎赤壁。 乱石穿空，惊涛拍岸，卷起千堆雪。 江山如画，一时多少豪杰。" +
 		"遥想公谨当年，小乔初嫁了，雄姿英发。 羽扇纶巾，谈笑间、樯橹灰飞烟灭。故国神游，多情应笑我，早生华发，人生如梦，一尊还酹江月。"
 
 	// Put string
-	err := s.bucket.PutObject(objectName, strings.NewReader(objectValue))
+	var retHeader http.Header
+	err := s.bucket.PutObject(objectName, strings.NewReader(objectValue), GetResponseHeader(&retHeader))
 	c.Assert(err, IsNil)
 
 	// Check
@@ -2790,10 +2791,10 @@ func (s *OssBucketSuite) TestPutObjectTagging(c *C) {
 		Key:   randStr(8),
 		Value: randStr(16),
 	}
-	tagging := ObjectTagging{
+	tagging := Tagging{
 		Tags: []Tag{tag1, tag2},
 	}
-	err := s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), Tagging(tagging))
+	err := s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), SetTagging(tagging))
 	c.Assert(err, IsNil)
 
 	headers, err := s.bucket.GetObjectDetailedMeta(objectName)
@@ -2810,10 +2811,10 @@ func (s *OssBucketSuite) TestPutObjectTagging(c *C) {
 	err = s.bucket.PutObjectTagging(objectName, tagging)
 	c.Assert(err, IsNil)
 
-	tagging, err = s.bucket.GetObjectTagging(objectName)
-	c.Assert(len(tagging.Tags), Equals, 1)
-	c.Assert(tagging.Tags[0].Key, Equals, tag.Key)
-	c.Assert(tagging.Tags[0].Value, Equals, tag.Value)
+	taggingResult, err := s.bucket.GetObjectTagging(objectName)
+	c.Assert(len(taggingResult.Tags), Equals, 1)
+	c.Assert(taggingResult.Tags[0].Key, Equals, tag.Key)
+	c.Assert(taggingResult.Tags[0].Value, Equals, tag.Value)
 
 	//put tagging, the length of the key exceeds 128
 	tag = Tag{
@@ -2890,13 +2891,15 @@ func (s *OssBucketSuite) TestGetObjectTagging(c *C) {
 		Key:   randStr(8),
 		Value: randStr(16),
 	}
-	tagging := ObjectTagging{
+
+	taggingInfo := Tagging{
 		Tags: []Tag{tag1, tag2},
 	}
-	err := s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), Tagging(tagging))
+
+	err := s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), SetTagging(taggingInfo))
 	c.Assert(err, IsNil)
 
-	tagging, err = s.bucket.GetObjectTagging(objectName)
+	tagging, err := s.bucket.GetObjectTagging(objectName)
 	c.Assert(len(tagging.Tags), Equals, 2)
 	if tagging.Tags[0].Key == tag1.Key {
 		c.Assert(tagging.Tags[0].Value, Equals, tag1.Value)
@@ -2927,7 +2930,7 @@ func (s *OssBucketSuite) TestGetObjectTagging(c *C) {
 	// copy object, with tagging option
 	destObjectName := objectName + "-dest"
 	tagging.Tags = []Tag{tag1, tag2}
-	_, err = s.bucket.CopyObject(objectName, destObjectName, Tagging(tagging))
+	_, err = s.bucket.CopyObject(objectName, destObjectName, SetTagging(taggingInfo))
 	c.Assert(err, IsNil)
 	tagging, err = s.bucket.GetObjectTagging(objectName)
 	c.Assert(err, IsNil)
@@ -2935,7 +2938,7 @@ func (s *OssBucketSuite) TestGetObjectTagging(c *C) {
 
 	// copy object, with tagging option, the value of tagging directive is "REPLACE"
 	tagging.Tags = []Tag{tag1, tag2}
-	_, err = s.bucket.CopyObject(objectName, destObjectName, Tagging(tagging), TaggingDirective(TaggingReplace))
+	_, err = s.bucket.CopyObject(objectName, destObjectName, SetTagging(taggingInfo), TaggingDirective(TaggingReplace))
 	c.Assert(err, IsNil)
 	tagging, err = s.bucket.GetObjectTagging(destObjectName)
 	c.Assert(err, IsNil)
@@ -2966,16 +2969,16 @@ func (s *OssBucketSuite) TestDeleteObjectTagging(c *C) {
 		Key:   randStr(8),
 		Value: randStr(16),
 	}
-	tagging := ObjectTagging{
+	tagging := Tagging{
 		Tags: []Tag{tag},
 	}
-	err = s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), Tagging(tagging))
+	err = s.bucket.PutObject(objectName, strings.NewReader(randStr(1024)), SetTagging(tagging))
 	c.Assert(err, IsNil)
 	err = s.bucket.DeleteObjectTagging(objectName)
 	c.Assert(err, IsNil)
-	tagging, err = s.bucket.GetObjectTagging(objectName)
+	taggingResult, err := s.bucket.GetObjectTagging(objectName)
 	c.Assert(err, IsNil)
-	c.Assert(len(tagging.Tags), Equals, 0)
+	c.Assert(len(taggingResult.Tags), Equals, 0)
 
 	//delete object tagging again
 	err = s.bucket.DeleteObjectTagging(objectName)
