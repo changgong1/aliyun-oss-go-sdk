@@ -3563,6 +3563,7 @@ func (s *OssBucketSuite) TestVersioningBatchDeleteVersionObjects(c *C) {
 	c.Assert(versionIdV1 != versionIdV2, Equals, true)
 
 	//batch delete objects
+<<<<<<< HEAD
 	versionIds := []DeleteObject{DeleteObject{Key: objectName1, VersionId: versionIdV1},
 		DeleteObject{Key: objectName2, VersionId: versionIdV2}}
 	deleteResult, err := bucket.DeleteObjectVersions(versionIds)
@@ -3571,6 +3572,26 @@ func (s *OssBucketSuite) TestVersioningBatchDeleteVersionObjects(c *C) {
 
 	// check delete detail info:key
 	deleteMap := map[string]string{}
+=======
+	versionIds := map[string]string{}
+	versionIds[objectName1] = versionIdV1
+	versionIds[objectName2] = versionIdV2
+	deleteResult, err := bucket.DeleteObjects([]string{}, KeysVersions(versionIds))
+	c.Assert(len(deleteResult.DeletedObjects), Equals, 2)
+	c.Assert(len(deleteResult.DeletedObjectsDetail), Equals, 2)
+
+	// check delete info
+	deleteMap := map[string]string{}
+	deleteMap[deleteResult.DeletedObjects[0]] = deleteResult.DeletedObjects[0]
+	deleteMap[deleteResult.DeletedObjects[1]] = deleteResult.DeletedObjects[1]
+	_, ok := deleteMap[objectName1]
+	c.Assert(ok, Equals, true)
+	_, ok = deleteMap[objectName2]
+	c.Assert(ok, Equals, true)
+
+	// check delete detail info:key
+	deleteMap = map[string]string{}
+>>>>>>> 2fe7728ce04078fd1ecbd10d08682c3ff6a35310
 	deleteMap[deleteResult.DeletedObjectsDetail[0].Key] = deleteResult.DeletedObjectsDetail[0].VersionId
 	deleteMap[deleteResult.DeletedObjectsDetail[1].Key] = deleteResult.DeletedObjectsDetail[1].VersionId
 	id1, ok := deleteMap[objectName1]
